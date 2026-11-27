@@ -14,13 +14,21 @@ CORS(app)
 with (ROOT / "LinearRegressionModel.pkl").open("rb") as model_file:
     model = pickle.load(model_file)
 car = pd.read_csv(ROOT / "Cleaned_Car_data.csv")
-car_options = car[["name", "company", "year", "fuel_type"]].drop_duplicates().to_dict(orient="records")
 
 
 @app.route("/", methods=["GET"])
 def index():
     companies = sorted(car["company"].dropna().unique().tolist())
-    return render_template("index.html", companies=companies, car_options=car_options)
+    car_models = sorted(car["name"].dropna().unique().tolist())
+    years = sorted(car["year"].dropna().unique().tolist(), reverse=True)
+    fuel_types = sorted(car["fuel_type"].dropna().unique().tolist())
+    return render_template(
+        "index.html",
+        companies=companies,
+        car_models=car_models,
+        years=years,
+        fuel_types=fuel_types,
+    )
 
 
 @app.route("/predict", methods=["POST"])
