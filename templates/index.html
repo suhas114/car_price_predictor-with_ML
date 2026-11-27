@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Car Price Predictor</title>
+  <style>
+    :root { color-scheme: light; --accent: #2563eb; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; font-family: system-ui, sans-serif; background: #f1f5f9; color: #172033; display: grid; place-items: center; padding: 24px; }
+    main { width: min(100%, 680px); background: white; border-radius: 18px; padding: clamp(22px, 5vw, 40px); box-shadow: 0 15px 40px #0f172a18; }
+    h1 { margin-top: 0; } p { color: #475569; }
+    form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    label { display: grid; gap: 7px; font-weight: 600; }
+    select, input { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 9px; font: inherit; background: white; }
+    button { grid-column: 1 / -1; border: 0; border-radius: 10px; padding: 13px; background: var(--accent); color: white; font: inherit; font-weight: 700; cursor: pointer; }
+    button:disabled { opacity: .6; cursor: wait; }
+    #result { grid-column: 1 / -1; min-height: 1.5em; font-weight: 700; }
+    @media (max-width: 560px) { form { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Car Price Predictor</h1>
+    <p>Select your car details and enter the kilometres driven to estimate its price.</p>
+    <form id="predictionForm">
+      <label>Company
+        <select name="company" required>
+          <option value="" selected disabled>Select company</option>
+          {% for company in companies %}
+            {% if company != 'Select Company' %}
+              <option value="{{ company }}">{{ company }}</option>
+            {% endif %}
+          {% endfor %}
+        </select>
+      </label>
+      <label>Car model
+        <select name="car_models" required>
+          <option value="" selected disabled>Select model</option>
+          {% for car_model in car_models %}
+            <option value="{{ car_model }}">{{ car_model }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Year
+        <select name="year" required>
+          <option value="" selected disabled>Select year</option>
+          {% for year in years %}
+            <option value="{{ year }}">{{ year }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Fuel type
+        <select name="fuel_type" required>
+          <option value="" selected disabled>Select fuel type</option>
+          {% for fuel_type in fuel_types %}
+            <option value="{{ fuel_type }}">{{ fuel_type }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Kilometres driven
+        <input name="kilo_driven" type="number" min="0" step="1" placeholder="e.g. 45000" required>
+      </label>
+      <button id="submitButton" type="submit">Estimate car price</button>
+      <div id="result" role="status" aria-live="polite"></div>
+    </form>
+  </main>
+  <script>
+    const form = document.getElementById("predictionForm");
+    const result = document.getElementById("result");
+    const button = document.getElementById("submitButton");
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      result.textContent = "Calculating...";
+      button.disabled = true;
+
+      try {
+        const response = await fetch("/predict", { method: "POST", body: new FormData(form) });
+        const body = await response.text();
+        if (!response.ok) throw new Error(body || "Prediction request failed.");
+        const price = Number(body);
+        result.textContent = Number.isFinite(price)
+          ? new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 }).format(price)
+          : body;
+      } catch (error) {
+        result.textContent = error.message || "Unable to predict the price. Please try again.";
+      } finally {
+        button.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
